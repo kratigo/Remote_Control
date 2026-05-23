@@ -1,78 +1,110 @@
-﻿using System.Diagnostics;
-using System.Threading;
-using Telegram.Bot;
-using Telegram.Bot.Exceptions;
-using Telegram.Bot.Polling;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
+﻿using Microsoft.Win32;
+using System.Diagnostics;
+using System.Security.Principal;
 
 namespace CS_GameTime
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            //ЗАПУСК БОТА
+            AutoStartCheck();
+
+            if (!IsRunAsAdmin())
+            {
+                RestartAsAdmin();
+
+                Environment.Exit(0);
+                return;
+            }
+
             TgBot bot = new TgBot();
-            Thread botThread = new Thread(new ThreadStart(bot.StartBot));
-            botThread.Start();
 
-            #region
-            //string processName = "CellToSingularity"; // game
-            ////Process process = new Process();
-            //Process[] processes = Process.GetProcessesByName(processName);
+            bot.StartBot();
 
-            //bool isProcessRunning = IsProcessRunning(processName);
-            //DateTime startProc = DateTime.Now;
+            Console.WriteLine("Приложение запущено.");
 
-            //if (isProcessRunning)
-            //{
-            //    startProc = processes[0].StartTime;
-            //    Console.WriteLine($"Игра {processName} запущена в {startProc}");
-            //}
-
-
-
-            while (true)
-            {
-                //isProcessRunning = IsProcessRunning(processName);
-
-                //if (isProcessRunning)
-                //{
-                //    DateTime currentDate = DateTime.Now;
-                //    if (currentDate - startProc > TimeSpan.FromHours(3))
-                //    {
-                //        processes = Process.GetProcessesByName(processName);
-                //        foreach (var proc in processes)
-                //        {
-                //            proc.Kill();
-                //        }
-                //        Console.Clear();
-                //        Console.WriteLine($"Вы играли в {processName} слишком долго. Игра была закрыта.");
-                //    }
-                //    Console.Clear();
-                //    Console.WriteLine($"Вы играете в {processName}: {currentDate - startProc}");
-
-                //}
-                //else
-                //{
-                //    startProc = DateTime.Now;
-                //    Console.Clear();
-                //    Console.WriteLine($"Отсчёт начнётся после запуска {processName}.");
-                //}
-                //Thread.Sleep(1000);
-
-            }
-            #endregion
-
-            bool IsProcessRunning(string processName)
-            {
-                Process[] processes = Process.GetProcessesByName(processName);
-                return processes.Length > 0;
-            }
-
+            await Task.Delay(-1);
         }
-        
+
+        static void AutoStartCheck()
+        {
+            AutoStartChecker autoStartChecker = new();
+
+            if (!autoStartChecker.IsInStartup())
+            {
+                autoStartChecker.AddToStartup();
+            }
+        }
+
+        static bool IsRunAsAdmin()
+        {
+            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+
+            WindowsPrincipal principal = new(identity);
+
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        static void RestartAsAdmin()
+        {
+            string? exeName = Environment.ProcessPath;
+
+            if (string.IsNullOrEmpty(exeName))
+            {
+                Console.WriteLine("Не удалось получить путь к exe.");
+
+                return;
+            }
+
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = exeName,
+                UseShellExecute = true,
+                Verb = "runas"
+            };
+
+            try
+            {
+                Process.Start(startInfo);
+            }
+            catch
+            {
+                Console.WriteLine("Пользователь отклонил UAC.");
+            }
+        }
+    }
+
+    class AutoStartChecker
+    {
+        private const string AppName = "CS_GameTime";
+
+        private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+        public bool IsInStartup()
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, false);
+
+            if (key == null)
+                return false;
+
+            return key.GetValue(AppName) != null;
+        }
+
+        public void AddToStartup()
+        {
+            string? exePath =
+                Environment.ProcessPath;
+
+            if (string.IsNullOrEmpty(exePath))
+                return;
+
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, true);
+
+            if (key == null)
+                return;
+
+            key.SetValue(AppName, $"\"{exePath}\"");
+        }
     }
 }

@@ -1,26 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CS_GameTime
 {
     internal class TgBot
     {
-        long MY_userId = 1816585045;
-
+        //long MY_userId = 1816585045;
+        //static string Token = "7901504622:AAHv3f8CgqNZyutZ9yQhFvRTIvenkqn9-JU";
+        private readonly CancellationTokenSource cts = new();
+        private readonly TelegramBotClient botClient = new TelegramBotClient(AppConfig.Token);
         RemoteControl remoteControl = new RemoteControl();
 
         public void StartBot()
         {
             Console.WriteLine("Бот запущен...");
-            var botClient = new TelegramBotClient("7901504622:AAHv3f8CgqNZyutZ9yQhFvRTIvenkqn9-JU");
-            using var cts = new CancellationTokenSource(); 
 
             var receiverOptions = new ReceiverOptions
             {
@@ -37,13 +32,13 @@ namespace CS_GameTime
             );
         }
 
-        async void SendMess(ITelegramBotClient bot, CancellationToken ct, string text)
+        async Task SendMess(ITelegramBotClient bot, CancellationToken ct, string text)
         {
 
             try
             {
                 await bot.SendTextMessageAsync(
-                chatId: MY_userId,
+                chatId: AppConfig.MY_userId,
                 text: text,
                 parseMode: ParseMode.Markdown,
                 cancellationToken: ct);
@@ -76,7 +71,7 @@ namespace CS_GameTime
 
             if (update.Message.Chat.Type == ChatType.Private)
             {
-                if(user.Id == MY_userId)
+                if(user.Id == AppConfig.MY_userId)
                 {
                     string text = "";
                     switch(message)
@@ -90,59 +85,59 @@ namespace CS_GameTime
                             "/start_cs2 - запустить CS2\n" +
                             "/stop_cs2 - остановить CS2\n" +
                             "/status - статус процессов игр";
-                            SendMess(bot, ct, EscapeMarkdown(text));
+                            await SendMess(bot, ct, EscapeMarkdown(text));
                             break;
                         case "/start":
                              text = $"{user.FirstName}, можно управлять компьютером! /help - доступные команды";
-                             SendMess(bot, ct, text);
+                             await SendMess(bot, ct, text);
                             break;
                         case "/info":
                             text = $"💠 Информация о вас:\n\n" +
                             $"👤 Имя: {user.FirstName}\n" +
                             $"🆔 ID: {user.Id}\n" +
                             $"🔖 Юзернейм: @{user.Username}\n";
-                            SendMess(bot, ct, text);
+                            await SendMess(bot, ct, text);
                             break;
 
                         case "/start_celltosingularity":
                             if(remoteControl.IsGameRunning("celltosingularity"))
                             {
                                 text = $"{user.FirstName}, целка уже запущена!";
-                                SendMess(bot, ct, text);
+                                await SendMess(bot, ct, text);
                                 break;
                             }
                             else
                             {
                                 remoteControl.StartSteamGame(977400);
                                 text = $"{user.FirstName}, игра celltosingularity запущена!";
-                                SendMess(bot, ct, text);
+                                await SendMess(bot, ct, text);
                             }
                             break;
                         case "/stop_celltosingularity":
                             remoteControl.StopGame("celltosingularity");
                             text = $"{user.FirstName}, игра celltosingularity закрыта!";
-                            SendMess(bot, ct, text);
+                            await SendMess(bot, ct, text);
                             break;
 
                         case "/start_cs2":
                             if(remoteControl.IsGameRunning("cs2"))
                             {
                                 text = $"{user.FirstName}, игра CS2 уже запущена!";
-                                SendMess(bot, ct, text);
+                                await SendMess(bot, ct, text);
                                 break;
                             }
                             else
                             {
                                 remoteControl.StartSteamGame(730);
                                 text = $"{user.FirstName}, игра CS2 запущена!";
-                                SendMess(bot, ct, text);
+                                await SendMess(bot, ct, text);
                             }
                             break;
                         case "/stop_cs2":
                             remoteControl.StopGame("cs2");
 
                             text = $"{user.FirstName}, игра CS2 закрыта!";
-                            SendMess(bot, ct, text);
+                            await SendMess(bot, ct, text);
                             break;
 
                         //all started processes
@@ -150,8 +145,8 @@ namespace CS_GameTime
                             text = "*Статус процессов:*\n\n" +
                                 $"{remoteControl.GetStatGame("celltosingularity")}\n" +
                                 $"{remoteControl.GetStatGame("cs2")}";
-                            
-                            SendMess(bot, ct, text);
+
+                            await SendMess(bot, ct, text);
                             break;
                     }
                 }

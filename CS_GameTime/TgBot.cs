@@ -162,7 +162,6 @@ namespace CS_GameTime
         Task HandleErrorAsync(ITelegramBotClient bot, Exception ex, CancellationToken ct)
         {
             Console.WriteLine($"Ошибка бота: {ex.Message}");
-            StartBot(); // Перезапуск бота при ошибке
             return Task.CompletedTask;
         }
     }

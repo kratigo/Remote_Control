@@ -15,11 +15,12 @@ namespace CS_GameTime
         long MY_userId = 1816585045;
 
         RemoteControl remoteControl = new RemoteControl();
+        AutoClicker autoClicker = new AutoClicker();
 
         public void StartBot()
         {
             Console.WriteLine("Бот запущен...");
-            var botClient = new TelegramBotClient("7901504622:AAHv3f8CgqNZyutZ9yQhFvRTIvenkqn9-JU");
+            var botClient = new TelegramBotClient("7901504622:AAH-pKH4UYhguLPC4uB5CHC_rmYEDdS--a4");
             using var cts = new CancellationTokenSource(); 
 
             var receiverOptions = new ReceiverOptions
@@ -89,7 +90,12 @@ namespace CS_GameTime
                             "/stop_celltosingularity - остановить CellToSingularity\n" +
                             "/start_cs2 - запустить CS2\n" +
                             "/stop_cs2 - остановить CS2\n" +
-                            "/status - статус процессов игр";
+                            "/start_tg - запустить Telegram\n" +
+                            "/stop_tg - остановить Telegram\n" +
+                            "/start_autoclicker - запустить AutoClicker\n" +
+                            "/stop_autoclicker - остановить AutoClicker\n" +
+                            "/status - статус процессов игр\n"+
+                            "/click";
                             SendMess(bot, ct, EscapeMarkdown(text));
                             break;
                         case "/start":
@@ -145,12 +151,50 @@ namespace CS_GameTime
                             SendMess(bot, ct, text);
                             break;
 
+                        case "/start_tg":
+                            if (remoteControl.IsGameRunning("Telegram"))
+                            {
+                                text = $"{user.FirstName}, Telegram уже запущен!";
+                                SendMess(bot, ct, text);
+                                break;
+                            }
+                            else
+                            {
+                                remoteControl.StartGame("\"C:\\Users\\beton\\AppData\\Roaming\\Telegram Desktop\\Telegram.exe\"");
+                                text = $"{user.FirstName}, Telegram запущен!";
+                                SendMess(bot, ct, text);
+                            }
+                            break;
+                        case "/stop_tg":
+                            remoteControl.StopGame("Telegram");
+
+                            text = $"{user.FirstName}, Telegram закрыт!";
+                            SendMess(bot, ct, text);
+                            break;
+                        case "/start_autoclicker":
+                            autoClicker.Start(1700, 970);
+                            text = $"{user.FirstName}, AutoClicker запущен!";
+                            SendMess(bot, ct, text);
+                            break;
+                        case "/stop_autoclicker":
+                            autoClicker.Stop();
+                            text = $"{user.FirstName}, AutoClicker закрыт!";
+                            SendMess(bot, ct, text);
+                            break;
+
                         //all started processes
                         case "/status":
                             text = "*Статус процессов:*\n\n" +
                                 $"{remoteControl.GetStatGame("celltosingularity")}\n" +
-                                $"{remoteControl.GetStatGame("cs2")}";
+                                $"{remoteControl.GetStatGame("cs2")}\n" +
+                                $"{remoteControl.GetStatGame("Telegram")}";
                             
+                            SendMess(bot, ct, text);
+                            break;
+                        case "/click":
+                            //autoClicker.MoveCursorToCenter();
+                            autoClicker.ClickMouse();
+                            text = $"{user.FirstName}, клик выполнен!";
                             SendMess(bot, ct, text);
                             break;
                     }

@@ -1,11 +1,14 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Win32;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
+
 
 namespace CS_GameTime
 {
@@ -13,7 +16,20 @@ namespace CS_GameTime
     {
         static void Main(string[] args)
         {
-            //ЗАПУСК БОТА
+            
+
+            //проверка на повторный запуск и закрытие нового экземпляра
+            //
+            AutoStartCheck();
+            if (!IsRunAsAdmin())
+            {
+                RestartAsAdmin();
+                Environment.Exit(0);
+                //return;
+            }
+
+
+            //ЗАПУСК 
             TgBot bot = new TgBot();
             Thread botThread = new Thread(new ThreadStart(bot.StartBot));
             botThread.Start();
@@ -61,7 +77,7 @@ namespace CS_GameTime
                 //    Console.Clear();
                 //    Console.WriteLine($"Отсчёт начнётся после запуска {processName}.");
                 //}
-                //Thread.Sleep(1000);
+                Thread.Sleep(1000);
 
             }
             #endregion
@@ -71,8 +87,72 @@ namespace CS_GameTime
                 Process[] processes = Process.GetProcessesByName(processName);
                 return processes.Length > 0;
             }
+            void AutoStartCheck()
+            {
+                AutoStartChecker autoStartChecker = new AutoStartChecker();
+                if (!autoStartChecker.IsInStartup())
+                {
+                    autoStartChecker.AddToStartup();
+                }
+            }
 
+            bool IsRunAsAdmin()
+            {
+                using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                WindowsPrincipal principal = new WindowsPrincipal(identity);
+
+                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+
+            void RestartAsAdmin()
+            {
+                var exeName = Environment.ProcessPath;
+
+                if (string.IsNullOrEmpty(exeName))
+                {
+                    Console.WriteLine("Не удалось получить путь к exe.");
+                    return;
+                }
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = exeName,
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+
+                try
+                {
+                    Process.Start(startInfo);
+                }
+                catch
+                {
+                    Console.WriteLine("Пользователь отклонил запуск от имени администратора.");
+                }
+            }
         }
-        
+    }
+    class AutoStartChecker
+    {
+        private const string AppName = "CS_GameTime";
+        private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+        public bool IsInStartup()
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, false);
+            if (key == null) return false;
+
+            return key.GetValue(AppName) != null;
+        }
+
+        public void AddToStartup()
+        {
+            string exePath = Process.GetCurrentProcess().MainModule!.FileName!;
+
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, true);
+            if (key == null) return;
+
+            key.SetValue(AppName, $"\"{exePath}\"");
+        }
     }
 }

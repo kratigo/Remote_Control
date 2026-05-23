@@ -6,21 +6,34 @@ namespace CS_GameTime
     {
         public string GetStatGame(string processName)
         {
-            DateTime currentDate = DateTime.Now;
-            Process[] processes = Process.GetProcessesByName(processName);
-            string stat = "";
             try
             {
-                DateTime startProc = processes[0].StartTime;
-                stat += $"Вы играете в {processes[0].ProcessName}: {currentDate - startProc}";
+                Process? process = Process
+                    .GetProcessesByName(processName)
+                    .FirstOrDefault();
+
+                if (process == null)
+                    return $"{processName}: не запущен";
+
+                DateTime startProc = process.StartTime;
+                TimeSpan time = DateTime.Now - startProc;
+
+                try
+                {
+                    return $"{process.ProcessName}: " +
+                           $"{DateTime.Now - process.StartTime:hh\\:mm\\:ss}";
+                }
+                catch
+                {
+                    return $"{processName}: не удалось получить время";
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при получении статуса игр: {ex.Message}");
+                return $"Ошибка: {ex.Message}";
             }
-            
-            return stat;
         }
+
         public void StopGame(string processName)
         {
             Process[] processes = Process.GetProcessesByName(processName);

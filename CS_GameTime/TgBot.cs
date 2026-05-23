@@ -7,8 +7,6 @@ namespace CS_GameTime
 {
     internal class TgBot
     {
-        //long MY_userId = 1816585045;
-        //static string Token = "7901504622:AAHv3f8CgqNZyutZ9yQhFvRTIvenkqn9-JU";
         private readonly CancellationTokenSource cts = new();
         private readonly TelegramBotClient botClient = new TelegramBotClient(AppConfig.Token);
         RemoteControl remoteControl = new RemoteControl();
@@ -68,7 +66,7 @@ namespace CS_GameTime
 
 
             string message = update.Message.Text.ToLower();
-
+            Console.WriteLine(message);
             if (update.Message.Chat.Type == ChatType.Private)
             {
                 if(user.Id == AppConfig.MY_userId)

@@ -6,8 +6,18 @@ namespace CS_GameTime
 {
     internal class Program
     {
+        //ЗАМЕНИТЬ ВСЕ Condole.WriteLine на логирование в файл, класс для логирования (возможно даже с ротацией по размеру и по дате)
         static async Task Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "--remove-startup") //добавить возможность удалять через тг бота
+            {
+                AutoStartChecker autoStartChecker = new();
+                autoStartChecker.RemoveFromStartup();
+                //лог удаления
+                //дабавлю папку Utils, где будет лежать класс логирования и прочие утилиты  (AutoStartChecker, проверка на запуск админ прав)
+                return;
+            }
+
             AutoStartCheck();
 
             if (!IsRunAsAdmin())
@@ -105,6 +115,24 @@ namespace CS_GameTime
                 return;
 
             key.SetValue(AppName, $"\"{exePath}\"");
+        }
+        public void RemoveFromStartup()
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, true);
+
+            if (key == null)
+                return;
+
+            // Если значение существует - удаляем
+            if (key.GetValue(AppName) != null)
+            {
+                key.DeleteValue(AppName);
+                Console.WriteLine("Программа удалена из автозапуска.");
+            }
+            else
+            {
+                Console.WriteLine("Программа не найдена в автозапуске.");
+            }
         }
     }
 }
